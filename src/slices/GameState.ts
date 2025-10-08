@@ -28,7 +28,7 @@ type GameState = {
 const initialState = {
   maxPop: 5,
   resources: {
-    wood: 0, // building materials
+    wood: 0, // building materials, we're going more modern, more about policy things
     food: 0,
     metals: 0,
   },
@@ -46,6 +46,8 @@ const initialState = {
     // migrants are limited in what they are allowed to do
     // migrants can be allowed to do more by overcoming politcal pressure
     // am I sure I know what my point is here?
+    // okay, what if there's a bunch of made up countries that people can come from
+    // you can institute policies that are related...
   },
 };
 
