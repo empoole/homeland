@@ -1,9 +1,13 @@
 const costs = {
-    buildings: {
-        house: {
-            wood: 10,
-        }
-    }
-}
+  buildings: {
+    houses: {
+      wood: 10,
+    },
+    tenements: {
+      wood: 20,
+      metals: 5,
+    },
+  },
+} as const;
 
-export default costs
+export default costs;

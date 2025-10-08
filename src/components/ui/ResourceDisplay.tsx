@@ -1,35 +1,50 @@
 /**
  * RESOURCE DISPLAY
- * 
+ *
  * Generic component for displaying resources in the game state.
  */
 
-import { useSelector } from "react-redux"
-import type { RootState } from "../../store"
-import { toTitleCase } from "../../lib/strings"
+import React, { useMemo } from "react";
+import { useSelector } from "react-redux";
+import type { RootState } from "../../store";
+import { toTitleCase } from "../../lib/strings";
+import type { GameState, LockName } from "../../types/gameState";
+
+type CategoryName = "resources" | "buildings" | "populations";
+type CategoryObject<T extends CategoryName> = GameState[T];
 
 type Props = {
-    resourceName : string;
-}
+  resourceName: CategoryName;
+};
 
-const ResourceDisplay = ({ resourceName }: Props) => {
-    const resources = useSelector(
-        (state: RootState) => 
-            state.gameState[resourceName as keyof RootState["gameState"]]
-    )
+const ResourceDisplay = React.memo(({ resourceName }: Props) => {
+  const categoryObject = useSelector(
+    (state: RootState) =>
+      state.gameState[resourceName] as CategoryObject<typeof resourceName>
+  );
 
-    return (
-        <div>
-            <h3>{toTitleCase(resourceName)}</h3>
-            <ul>
-                {
-                    Object.entries(resources).map(([resource, count]) => (
-                        <li key={resource}>{toTitleCase(resource)}: {count}</li>
-                    ))
-                }
-            </ul>
-        </div>
-    )
-}
+  const locks = useSelector((state: RootState) => state.gameState.locks);
 
-export default ResourceDisplay
+  const listItems = useMemo(() => {
+    return Object.entries(categoryObject).map(([itemKey, count]) => {
+      if (locks[itemKey as LockName] === true) {
+        return null;
+      }
+
+      return (
+        <li key={itemKey}>
+          {toTitleCase(itemKey)}: {count as number}
+        </li>
+      );
+    });
+  }, [categoryObject, locks]);
+
+  return (
+    <div>
+      <h3>{toTitleCase(resourceName)}</h3>
+      <ul>{listItems}</ul>
+    </div>
+  );
+});
+
+export default ResourceDisplay;
