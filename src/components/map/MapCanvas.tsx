@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 
 /**
  *
@@ -11,31 +11,27 @@ import React, { useRef, useState, useEffect } from "react";
  *
  */
 // test
+const TILE_SIZE = 32;
 const tilemapData: Tilemap = {
   width: 10,
   height: 10,
-  tileSize: 32, // Example tile size
+  tileSize: TILE_SIZE,
   data: [
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
-    [0, 1, 0, 0, 0, 0, 0, 0, 1, 0],
-    [0, 1, 0, 1, 1, 1, 1, 0, 1, 0],
-    [0, 1, 0, 1, 0, 0, 1, 0, 1, 0],
-    [0, 1, 0, 1, 0, 0, 1, 0, 1, 0],
-    [0, 1, 0, 1, 1, 1, 1, 0, 1, 0],
-    [0, 1, 0, 0, 0, 0, 0, 0, 1, 0],
-    [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 2, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 4, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   ],
 };
 
 const tilesetImage = new Image();
 tilesetImage.src = "/tileset.png";
-
-// tilesetImage.onload = () => {
-//   // Tileset loaded, now you can start drawing
-//   drawMap(tilemapData, tilesetImage);
-// };
 
 tilesetImage.onerror = () => {
   console.error("Failed to load tileset image.");
@@ -45,8 +41,8 @@ tilesetImage.onerror = () => {
 
 const MapCanvas = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const CANVAS_WIDTH = 400;
-  const CANVAS_HEIGHT = 400;
+  const CANVAS_WIDTH = 320;
+  const CANVAS_HEIGHT = 320;
   const [ctx, setCtx] = useState<CanvasRenderingContext2D | null>(null);
   useEffect(() => {
     const canvas = canvasRef.current;
