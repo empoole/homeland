@@ -5,7 +5,7 @@ import type { ResourceName, BuildingName, LockName } from "../types/gameState";
 const initialState = {
   maxPop: 5,
   resources: {
-    wood: 0, // building materials, we're going more modern, more about policy things
+    wood: 0,
     food: 0,
     metals: 0,
   },
@@ -84,17 +84,30 @@ export const gameStateSlice = createSlice({
       };
     },
     updatePopulation: (state) => {
-      if (Math.random() > 0.12) return; // Often you don't get any new civilians
+      const CIVILIAN_GROWTH_PROBABILITY = 0.12;
+      const MAX_RANDOM_GROWTH = 3;
+
+      if (Math.random() > CIVILIAN_GROWTH_PROBABILITY) return;
+
       const totalPop = Object.values(state.populations).reduce(
         (total, pop) => total + pop,
         0
       );
-      if (totalPop < state.maxPop) {
-        let newCivs = Math.random() * 3;
-        if (totalPop + newCivs > state.maxPop) {
-          newCivs = state.maxPop - totalPop;
-        }
-        state.populations.civilians += Math.floor(newCivs);
+
+      if (totalPop >= state.maxPop) return;
+
+      const availableCapacity = state.maxPop - totalPop;
+      const randomGrowth = Math.random() * MAX_RANDOM_GROWTH;
+      const newCivsUncapped = Math.min(randomGrowth, availableCapacity);
+      const newCivs = Math.trunc(newCivsUncapped);
+
+      if (newCivs > 0) {
+        const newPops = {
+          ...state.populations,
+          civilians: state.populations.civilians + newCivs,
+        };
+
+        return { ...state, populations: newPops };
       }
     },
   },

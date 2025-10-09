@@ -21,8 +21,8 @@ const Button = ({ text, cooldown, func }: ButtonProps) => {
 
   const buttonStyle: CSSProperties = {
     position: "relative",
-    background: "#b8c2b9",
-    color: "#382b26",
+    background: "#382b26",
+    color: "#b8c2b9",
     cursor: isActive ? "not-allowed" : "pointer",
     overflow: "hidden",
   };
@@ -33,9 +33,8 @@ const Button = ({ text, cooldown, func }: ButtonProps) => {
     left: 0,
     height: "100%",
     width: `${progress * 100}%`,
-    backgroundColor: "#382b26",
+    backgroundColor: "#b8c2b9",
     transition: "none",
-    opacity: 0.5,
     zIndex: 0,
   };
 
@@ -58,13 +57,7 @@ const Button = ({ text, cooldown, func }: ButtonProps) => {
           alignItems: "center",
         }}
       >
-        {isActive ? (
-          // Show countdown message when active
-          `Wait (${remainingTime}s)`
-        ) : (
-          // Show children (e.g., icon) and text when ready
-          <>{text}</>
-        )}
+        {isActive ? `Wait (${remainingTime}s)` : <>{text}</>}
       </span>
     </button>
   );
