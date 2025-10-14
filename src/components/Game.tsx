@@ -13,6 +13,7 @@ import {
   build,
   updatePopulation,
   unlock,
+  incrementResources,
 } from "../slices/GameState";
 import useFrameTimeInterval from "../hooks/useFrameTimeInterval";
 import MapCanvas from "./map/MapCanvas";
@@ -39,6 +40,7 @@ const Game = () => {
 
   useFrameTimeInterval(1000, () => {
     dispatch(updatePopulation());
+    dispatch(incrementResources())
   });
 
   useFrameTimeInterval(100, () => {

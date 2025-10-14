@@ -1,6 +1,20 @@
 import { createSlice } from "@reduxjs/toolkit";
 import costs from "../configs/costs";
 import type { ResourceName, BuildingName, LockName } from "../types/gameState";
+import { baseMultipliers } from "../types/gameState";
+
+export const mapBuildingToResource = {
+  home: ["food", "wood"],
+  farms: ["food"],
+  mines: ["metals"],
+} as const;
+
+export const mapResourceToBuilding = {
+  wood: ["home"],
+  food: ["home", "farms"],
+  metals: ["mines"],
+} as const;
+
 
 const initialState = {
   maxPop: 5,
@@ -10,6 +24,7 @@ const initialState = {
     metals: 0,
   },
   buildings: {
+    home: 1,
     houses: 0,
     tenements: 0,
     farms: 0,
@@ -25,6 +40,7 @@ const initialState = {
     factories: true,
     metals: true,
   },
+  multipliers: baseMultipliers
 };
 
 export const gameStateSlice = createSlice({
@@ -83,6 +99,30 @@ export const gameStateSlice = createSlice({
         buildings: newBuildings,
       };
     },
+    incrementResources: (state) => {
+      const resources = {...state.resources};
+      const buildings = {...state.buildings};
+      
+      for (const building in buildings) {
+        const resourceTypes = mapBuildingToResource[building as keyof typeof mapBuildingToResource]
+        if (!resourceTypes) {
+          console.warn(`No resources mapped for building: ${building}`);
+          continue;
+        }
+        const numGenerators = buildings[building as keyof typeof buildings]
+        const multiplier = state.multipliers[building as keyof typeof state.multipliers];
+        if (!multiplier) {
+            console.warn(`No multiplier found for resource: ${building}`);
+            continue;
+        }
+        const increment = multiplier * numGenerators;
+        for (const resource of resourceTypes) {
+          resources[resource as ResourceName] = resources[resource as ResourceName] + increment;
+        }
+      }
+      
+      return { ...state, resources: resources }
+    },
     updatePopulation: (state) => {
       const CIVILIAN_GROWTH_PROBABILITY = 0.12;
       const MAX_RANDOM_GROWTH = 3;
@@ -113,7 +153,7 @@ export const gameStateSlice = createSlice({
   },
 });
 
-export const { addResource, build, updatePopulation, unlock } =
+export const { addResource, build, updatePopulation, incrementResources, unlock } =
   gameStateSlice.actions;
 
 export default gameStateSlice.reducer;

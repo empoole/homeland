@@ -33,7 +33,7 @@ const ResourceDisplay = React.memo(({ resourceName }: Props) => {
 
       return (
         <li key={itemKey}>
-          {toTitleCase(itemKey)}: {count as number}
+          {toTitleCase(itemKey)}: {Math.trunc(count) as number}
         </li>
       );
     });

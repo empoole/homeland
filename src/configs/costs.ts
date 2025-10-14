@@ -1,9 +1,9 @@
 const costs = {
   buildings: {
-    houses: {
+    house: {
       wood: 10,
     },
-    tenements: {
+    tenement: {
       wood: 20,
       metals: 5,
     },

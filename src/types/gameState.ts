@@ -22,7 +22,19 @@ export type GameState = {
     factories: boolean;
     metals: boolean;
   };
+  multipliers: {
+    home: number;
+    farms: number;
+    mines: number;
+  }
 };
+
+// base resource multiplier per generator
+export const baseMultipliers = {
+  "home": 0.15,
+  "farms": 0.25,
+  "mines": 0.2,
+} as const
 
 export type GameStateKeys<T extends keyof GameState> = keyof GameState[T];
 
