@@ -1,12 +1,15 @@
 export type GameState = {
-  maxPop: number;
-  totalExploredTiles: number;
+  map: {
+    totalExploredTiles: number;
+    tiles: Tile[];  
+  }
   resources: {
     wood: number;
     food: number;
     metals: number;
   };
   buildings: {
+    home: number;
     houses: number;
     tenements: number;
     farms: number;
@@ -15,7 +18,15 @@ export type GameState = {
   };
   populations: {
     civilians: number;
-    migrants: number;
+    lumberjacks?: number;
+    miners?: number;
+    builders?: number;
+    farmers?: number;
+  };
+  populationMeta: {
+    maxPop: number;
+    civilianGrowthProbability: number;
+    maxRandomGrowth: number;
   };
   locks: {
     mines: boolean;
@@ -28,6 +39,13 @@ export type GameState = {
     farms: number;
     mines: number;
   }
+};
+
+export type TilesTypes = "blank" | "highlighted" | "home" | "mines" | "houses" | "farms";
+export type Tile = {
+  id: string;
+  type: TilesTypes;
+  explored: boolean;
 };
 
 // base resource multiplier per generator

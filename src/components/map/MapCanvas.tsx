@@ -1,5 +1,7 @@
 import { useRef, useState, useEffect } from "react";
 import useFrameTimeInterval from "../../hooks/useFrameTimeInterval";
+import { exploreTile } from "../../slices/GameState";
+import type { Tile, TilesTypes } from "../../types/gameState";
 
 /**
  *
@@ -11,27 +13,24 @@ import useFrameTimeInterval from "../../hooks/useFrameTimeInterval";
  * you can "prestige" to unlock a larger map (more tiles more zoomed out)
  *
  */
+
+
+
 // test
 
 const TILE_SIZE = 32;
 const MAP_WIDTH = 10;
 const MAP_HEIGHT = 10;
 
-type TilesTypes = "blank" | "highlighted" | "home" | "mine" | "house" | "farm";
-type Tile = {
-  id: string;
-  type: TilesTypes;
-  status: "unexplored" | "visited" | "next-to-visit";
-};
 type TileData = Record<string, Tile>;
 const createTile = (
-  status: "unexplored" | "visited" | "next-to-visit",
+  explored: boolean,
   type: TilesTypes,
   id: string
 ): Tile => ({
   id,
   type,
-  status,
+  explored,
 });
 
 const generateTileData = (mapWidth: number, mapHeight: number) => {
@@ -40,7 +39,7 @@ const generateTileData = (mapWidth: number, mapHeight: number) => {
   for (let h = 0; h < mapHeight; h++) {
     const row = [];
     for (let w = 0; w < mapWidth; w++) {
-      tiles[`${h}-${w}`] = createTile("unexplored", "blank", `${h}-${w}`);
+      tiles[`${h}-${w}`] = createTile(false, "blank", `${h}-${w}`);
       row.push(0);
     }
     data.push(row);
@@ -66,6 +65,8 @@ const tilemapData: Tilemap = {
 const [startX, startY] = generateStartLocation(MAP_WIDTH, MAP_HEIGHT);
 
 tilemapData.data[startX][startY] = 2;
+tiles[`${startX}-${startY}`].type = "home";
+exploreTile(`${startX}-${startY}`);
 
 const tilesetImage = new Image();
 tilesetImage.src = "/tileset.png";
@@ -74,7 +75,7 @@ tilesetImage.onerror = () => {
   console.error("Failed to load tileset image.");
 };
 
-//test
+// end test
 
 const MapCanvas = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -166,9 +167,9 @@ const MapCanvas = () => {
       // forests give you wood generation
       // blank spaces can be made into farms for food generation
       // blank spaces can be dedicated to buildings, allowing up to 5 buildings to be added
-      if (tiles[`${gridY}-${gridX}`].status !== "visited") {
+      if (!tiles[`${gridY}-${gridX}`].explored) {
         tilemapData.data[gridY][gridX] = 1;
-        tiles[`${gridY}-${gridX}`].status = "visited";
+        exploreTile(`${gridY}-${gridX}`);
         setTimeout(() => {
           tilemapData.data[gridY][gridX] = Math.trunc(Math.random() * 2 + 4);
         }, 1000);

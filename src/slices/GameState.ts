@@ -2,6 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 import costs from "../configs/costs";
 import type { ResourceName, BuildingName, LockName } from "../types/gameState";
 import { baseMultipliers } from "../types/gameState";
+import type { GameState } from "../types/gameState";
 
 export const mapBuildingToResource = {
   home: ["food", "wood"],
@@ -20,9 +21,11 @@ export const mapResourceToBuilding = {
 // to build a mine you need to find a mine tile and build a mine there
 //
 
-const initialState = {
-  maxPop: 5,
-  totalExploredTiles: 1,
+const initialState: GameState = {
+  map: {
+    totalExploredTiles: 1,
+    tiles: [],  
+  },
   resources: {
     wood: 0,
     food: 0,
@@ -38,6 +41,12 @@ const initialState = {
   },
   populations: {
     civilians: 0,
+  },
+  populationMeta: {
+    // These values could be a function of total food, availible jobs, housing, policies etc
+    maxPop: 5,
+    civilianGrowthProbability: 0.12,
+    maxRandomGrowth: 3
   },
   locks: {
     mines: true,
@@ -70,7 +79,7 @@ export const gameStateSlice = createSlice({
 
       const newResources = { ...state.resources };
       const newBuildings = { ...state.buildings };
-      const maxPop = state.maxPop;
+      const maxPop = state.populationMeta.maxPop;
       let canAfford = true;
 
       const updatedResources: { wood: number; food: number; metals: number } = {
@@ -99,10 +108,23 @@ export const gameStateSlice = createSlice({
 
       return {
         ...state,
-        maxPop: maxPop + 5,
+        populationMeta: { ...state.populationMeta, maxPop: maxPop + 5},
         resources: newResources,
         buildings: newBuildings,
       };
+    },
+    exploreTile: (state, action) => {
+      const tileId = action.payload;
+      const tile = state.map.tiles[tileId]
+      tile.explored = true;
+      return {
+        ...state,
+        map: {
+          ...state.map,
+          totalExploredTiles: state.map.totalExploredTiles + 1,
+          tiles: [ ...state.map.tiles, tile ]
+        },
+      }
     },
     incrementResources: (state) => {
       const resources = {...state.resources};
@@ -129,20 +151,17 @@ export const gameStateSlice = createSlice({
       return { ...state, resources: resources }
     },
     updatePopulation: (state) => {
-      const CIVILIAN_GROWTH_PROBABILITY = 0.12;
-      const MAX_RANDOM_GROWTH = 3;
-
-      if (Math.random() > CIVILIAN_GROWTH_PROBABILITY) return;
+      if (Math.random() > state.populationMeta.civilianGrowthProbability) return;
 
       const totalPop = Object.values(state.populations).reduce(
         (total, pop) => total + pop,
         0
       );
 
-      if (totalPop >= state.maxPop) return;
+      if (totalPop >= state.populationMeta.maxPop) return;
 
-      const availableCapacity = state.maxPop - totalPop;
-      const randomGrowth = Math.random() * MAX_RANDOM_GROWTH;
+      const availableCapacity = state.populationMeta.maxPop - totalPop;
+      const randomGrowth = Math.random() * state.populationMeta.maxRandomGrowth;
       const newCivsUncapped = Math.min(randomGrowth, availableCapacity);
       const newCivs = Math.trunc(newCivsUncapped);
 
@@ -158,7 +177,13 @@ export const gameStateSlice = createSlice({
   },
 });
 
-export const { addResource, build, updatePopulation, incrementResources, unlock } =
-  gameStateSlice.actions;
+export const {
+  addResource,
+  build,
+  updatePopulation,
+  exploreTile,
+  incrementResources,
+  unlock
+} = gameStateSlice.actions;
 
 export default gameStateSlice.reducer;

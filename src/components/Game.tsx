@@ -63,7 +63,7 @@ const Game = () => {
         <h4>
           Total Population:{" "}
           {Object.values(pops).reduce((total, pop) => total + pop, 0)}/
-          {gameState.maxPop}
+          {gameState.populationMeta.maxPop}
         </h4>
         <div id="resource-buttons">
           <Button
@@ -82,13 +82,13 @@ const Game = () => {
         <div id="build-buttons">
           <Button
             text="Build House"
-            cooldown={timing.cooldowns.build.house}
+            cooldown={timing.cooldowns.build.houses}
             func={() => build("houses")}
           />
           {!locks.tenements && (
             <Button
               text="Build Tenement"
-              cooldown={timing.cooldowns.build.tenement}
+              cooldown={timing.cooldowns.build.tenements}
               func={() => build("tenements")}
             />
           )}
