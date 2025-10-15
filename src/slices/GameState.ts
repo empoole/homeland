@@ -2,6 +2,10 @@ import { createSlice } from "@reduxjs/toolkit";
 import costs from "../configs/costs";
 import type { ResourceName, BuildingName, LockName } from "../types/gameState";
 
+// NOTES:
+// to build a mine you need to find a mine tile and build a mine there
+//
+
 const initialState = {
   maxPop: 5,
   resources: {
