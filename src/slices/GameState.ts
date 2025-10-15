@@ -16,6 +16,10 @@ export const mapResourceToBuilding = {
 } as const;
 
 
+// NOTES:
+// to build a mine you need to find a mine tile and build a mine there
+//
+
 const initialState = {
   maxPop: 5,
   totalExploredTiles: 1,
