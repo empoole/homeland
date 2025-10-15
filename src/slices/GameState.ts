@@ -18,6 +18,7 @@ export const mapResourceToBuilding = {
 
 const initialState = {
   maxPop: 5,
+  totalExploredTiles: 1,
   resources: {
     wood: 0,
     food: 0,

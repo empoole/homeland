@@ -1,5 +1,6 @@
 export type GameState = {
   maxPop: number;
+  totalExploredTiles: number;
   resources: {
     wood: number;
     food: number;
