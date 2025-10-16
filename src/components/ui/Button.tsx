@@ -6,16 +6,19 @@ import type { Action } from "@reduxjs/toolkit";
 type ButtonProps = {
   text: string;
   cooldown: number;
-  func: () => Action;
+  func: () => Action | null;
 };
 
 const Button = ({ text, cooldown, func }: ButtonProps) => {
   const dispatch = useDispatch();
 
+  const action = func()
+  if (!action) return <button disabled>Not enough resources</button>
+
   const { progress, isActive, startTimer } = useFrameButtonTimer(
     cooldown,
     () => {
-      dispatch(func());
+      if (action) dispatch(action);
     }
   );
 

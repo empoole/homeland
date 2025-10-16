@@ -1,5 +1,8 @@
 import { createAction } from "@reduxjs/toolkit";
 
-export const build = createAction("GameState/ExploreTile", (tileId: string) => ({
-  payload: { tileId },
+export const exploreTile = createAction("GameState/ExploreTile", (
+  {tileY, tileX}:
+  {tileY: number, tileX: number}
+) => ({
+  payload: { tileY, tileX }
 }));

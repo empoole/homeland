@@ -3,9 +3,15 @@ const costs = {
     houses: {
       wood: 10,
     },
-    tenements: {
+    farms: {
       wood: 20,
-      metals: 5,
+    },
+    mines: {
+      wood: 40,
+    },
+    tenements: {
+      wood: 40,
+      metals: 15,
     },
   },
 } as const;

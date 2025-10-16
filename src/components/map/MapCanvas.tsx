@@ -1,7 +1,11 @@
 import { useRef, useState, useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import useFrameTimeInterval from "../../hooks/useFrameTimeInterval";
 import { exploreTile } from "../../slices/GameState";
-import type { Tile, TilesTypes } from "../../types/gameState";
+import { TILE_SIZE, MAP_HEIGHT, MAP_WIDTH } from "../../configs/constants";
+import type { RootState } from "../../store";
+import type { Tile } from "../../types/gameState";
+
 
 /**
  *
@@ -15,73 +19,38 @@ import type { Tile, TilesTypes } from "../../types/gameState";
  */
 
 
-
-// test
-
-const TILE_SIZE = 32;
-const MAP_WIDTH = 10;
-const MAP_HEIGHT = 10;
-
-type TileData = Record<string, Tile>;
-const createTile = (
-  explored: boolean,
-  type: TilesTypes,
-  id: string
-): Tile => ({
-  id,
-  type,
-  explored,
-});
-
-const generateTileData = (mapWidth: number, mapHeight: number) => {
-  const data = [];
-  const tiles: TileData = {};
-  for (let h = 0; h < mapHeight; h++) {
-    const row = [];
-    for (let w = 0; w < mapWidth; w++) {
-      tiles[`${h}-${w}`] = createTile(false, "blank", `${h}-${w}`);
-      row.push(0);
-    }
-    data.push(row);
-  }
-  return { tiles, data };
-};
-
-const generateStartLocation = (mapWidth: number, mapHeight: number) => {
-  const startX = Math.trunc(Math.random() * mapWidth);
-  const startY = Math.trunc(Math.random() * mapHeight);
-  return [startX, startY];
-};
-
-const { tiles, data } = generateTileData(MAP_WIDTH, MAP_HEIGHT);
-
-const tilemapData: Tilemap = {
-  width: MAP_WIDTH,
-  height: MAP_HEIGHT,
-  tileSize: TILE_SIZE,
-  data: data,
-};
-
-const [startX, startY] = generateStartLocation(MAP_WIDTH, MAP_HEIGHT);
-
-tilemapData.data[startX][startY] = 2;
-tiles[`${startX}-${startY}`].type = "home";
-exploreTile(`${startX}-${startY}`);
-
-const tilesetImage = new Image();
-tilesetImage.src = "/tileset.png";
-
-tilesetImage.onerror = () => {
-  console.error("Failed to load tileset image.");
-};
-
-// end test
-
 const MapCanvas = () => {
+  const dispatch = useDispatch();
+
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const CANVAS_WIDTH = 320;
   const CANVAS_HEIGHT = 320;
   const [ctx, setCtx] = useState<CanvasRenderingContext2D | null>(null);
+
+  // test
+  interface Tilemap {
+    width: number; // Map width in tiles
+    height: number; // Map height in tiles
+    tileSize: number; // Size of each tile in pixels
+    tiles: Tile[][]; // 2D array representing the map, storing tile IDs
+  }
+
+  const tilesState = useSelector((state: RootState) => state.gameState).map.tiles;
+
+  const tilemapData: Tilemap = {
+    width: MAP_WIDTH,
+    height: MAP_HEIGHT,
+    tileSize: TILE_SIZE,
+    tiles: tilesState,
+  };
+
+  const tilesetImage = new Image();
+  tilesetImage.src = "/tileset.png";
+
+  tilesetImage.onerror = () => {
+    console.error("Failed to load tileset image.");
+  };
+  // end test
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -99,13 +68,13 @@ const MapCanvas = () => {
 
     for (let y = 0; y < map.height; y++) {
       for (let x = 0; x < map.width; x++) {
-        const tileId = map.data[y][x];
-        // Calculate source X, Y in the tileset based on tileId
-        // Assuming a simple linear tileset for now
+        const tile = map.tiles[y][x];
+        // 8 is the unexplored tile type
+        const tileType = tile.explored ? tile.type : 8;
         const sourceX =
-          (tileId % (tileset.width / map.tileSize)) * map.tileSize;
+          (tileType % (tileset.width / map.tileSize)) * map.tileSize;
         const sourceY =
-          Math.floor(tileId / (tileset.width / map.tileSize)) * map.tileSize;
+          Math.floor(tileType / (tileset.width / map.tileSize)) * map.tileSize;
 
         ctx.drawImage(
           tileset,
@@ -158,20 +127,16 @@ const MapCanvas = () => {
       // check resource levels
       // if you have enough
       // show loading tile (1)
-      // get random tile
-      // show random tile
       // grant tile related reward
-      // most tiles should be blank
       // -----
       // mines give you metal generation
       // forests give you wood generation
       // blank spaces can be made into farms for food generation
-      // blank spaces can be dedicated to buildings, allowing up to 5 buildings to be added
-      if (!tiles[`${gridY}-${gridX}`].explored) {
-        tilemapData.data[gridY][gridX] = 1;
-        exploreTile(`${gridY}-${gridX}`);
+      // blank spaces can be dedicated to buildings, allowing up to 5 buildings to be added  
+      if (!tilesState[gridY][gridX].explored) {
+        // draw loading tile (type 9)
         setTimeout(() => {
-          tilemapData.data[gridY][gridX] = Math.trunc(Math.random() * 2 + 4);
+          dispatch(exploreTile({tileY: gridY, tileX: gridX}));
         }, 1000);
       }
     }
@@ -189,11 +154,6 @@ const MapCanvas = () => {
   );
 };
 
-interface Tilemap {
-  width: number; // Map width in tiles
-  height: number; // Map height in tiles
-  tileSize: number; // Size of each tile in pixels
-  data: number[][]; // 2D array representing the map, storing tile IDs
-}
+
 
 export default MapCanvas;

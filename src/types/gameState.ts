@@ -1,7 +1,8 @@
 export type GameState = {
   map: {
     totalExploredTiles: number;
-    tiles: Tile[];  
+    tiles: Tile[][];
+    probabilities: { [key: string]: number };
   }
   resources: {
     wood: number;
@@ -41,19 +42,22 @@ export type GameState = {
   }
 };
 
-export type TilesTypes = "blank" | "highlighted" | "home" | "mines" | "houses" | "farms";
+export const TilesTypeNames = [
+  "unexplored",
+  "highlighted",
+  "home",
+  "empty",
+  "mines",
+  "houses",
+  "farms"
+];
 export type Tile = {
   id: string;
-  type: TilesTypes;
+  type: number;
   explored: boolean;
 };
 
-// base resource multiplier per generator
-export const baseMultipliers = {
-  "home": 0.15,
-  "farms": 0.25,
-  "mines": 0.2,
-} as const
+
 
 export type GameStateKeys<T extends keyof GameState> = keyof GameState[T];
 

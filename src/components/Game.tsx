@@ -2,15 +2,15 @@ import { useDispatch, useSelector } from "react-redux";
 
 import type { RootState } from "../store";
 import timing from "../configs/timing";
+import costs from "../configs/costs";
 import Button from "./ui/Button";
 import ResourceDisplay from "./ui/ResourceDisplay";
-
 // import { initializeMapGrid } from "./map/mapGenerator";
 // import { MapState } from "../types/map";
 
 import {
   addResource,
-  build,
+  purchase,
   updatePopulation,
   unlock,
   incrementResources,
@@ -83,13 +83,19 @@ const Game = () => {
           <Button
             text="Build House"
             cooldown={timing.cooldowns.build.houses}
-            func={() => build("houses")}
+            func={() => {
+              if (gameState.resources.wood >= costs.buildings.houses.wood) {
+                return purchase({entityType: "buildings", entityName: "houses", quantity: 1})
+              } else {
+                return null
+              }
+            }}
           />
           {!locks.tenements && (
             <Button
               text="Build Tenement"
               cooldown={timing.cooldowns.build.tenements}
-              func={() => build("tenements")}
+              func={() => purchase({entityType: "buildings", entityName: "tenements", quantity: 1})}
             />
           )}
         </div>

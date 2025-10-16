@@ -1,30 +1,22 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { baseMapProbabilities, baseBuildingMultipliers, mapBuildingToResource } from "../configs/constants";
+import { generateTileData } from "../lib/tiles";
+import { MAP_HEIGHT, MAP_WIDTH } from "../configs/constants"
+
 import costs from "../configs/costs";
+
 import type { ResourceName, BuildingName, LockName } from "../types/gameState";
-import { baseMultipliers } from "../types/gameState";
 import type { GameState } from "../types/gameState";
-
-export const mapBuildingToResource = {
-  home: ["food", "wood"],
-  farms: ["food"],
-  mines: ["metals"],
-} as const;
-
-export const mapResourceToBuilding = {
-  wood: ["home"],
-  food: ["home", "farms"],
-  metals: ["mines"],
-} as const;
-
 
 // NOTES:
 // to build a mine you need to find a mine tile and build a mine there
 //
-
+const tiles = generateTileData(MAP_WIDTH, MAP_HEIGHT);
 const initialState: GameState = {
   map: {
     totalExploredTiles: 1,
-    tiles: [],  
+    tiles: tiles,
+    probabilities: baseMapProbabilities,
   },
   resources: {
     wood: 0,
@@ -54,7 +46,7 @@ const initialState: GameState = {
     factories: true,
     metals: true,
   },
-  multipliers: baseMultipliers
+  multipliers: baseBuildingMultipliers
 };
 
 export const gameStateSlice = createSlice({
@@ -69,18 +61,21 @@ export const gameStateSlice = createSlice({
       const unlockType = action.payload.type as LockName;
       state.locks[unlockType] = true;
     },
-    build: (state, action) => {
-      const building: BuildingName = action.payload;
-      const cost = costs.buildings[building as keyof typeof costs.buildings];
+    purchase: (state, action) => {
+      const entityType: string = action.payload.entityType;
+      const entityName: string = action.payload.entityName;
+      const quantity: number = action.payload.quantity;
+      const resources = { ...state.resources }
+      const cost = costs[entityType as keyof typeof costs];
       if (!cost) {
-        console.warn(`Attempted to build unknown building: ${building}`);
+        console.warn(`Attempted to purchase unknown entity type: ${entityType}`);
         return state;
       }
-
-      const newResources = { ...state.resources };
-      const newBuildings = { ...state.buildings };
-      const maxPop = state.populationMeta.maxPop;
-      let canAfford = true;
+      const entityCost = cost[entityName as keyof typeof cost];
+      if (!entityCost) {
+        console.warn(`Attempted to purchase unknown entity: ${entityName}`);
+        return state;
+      }
 
       const updatedResources: { wood: number; food: number; metals: number } = {
         wood: 0,
@@ -88,43 +83,67 @@ export const gameStateSlice = createSlice({
         metals: 0,
       };
 
-      Object.keys(cost).forEach((resourceKey) => {
+      Object.keys(entityCost).forEach((resourceKey) => {
         const resourceName = resourceKey as ResourceName;
-        const resourceCost = cost[resourceKey as keyof typeof cost] || 0;
-        const currentValue = newResources[resourceName];
-
+        const resourceCost = (entityCost[resourceKey as keyof typeof entityCost] || 0) * quantity;
+        const currentValue = resources[resourceName];
         if (currentValue < resourceCost) {
-          canAfford = false;
-          console.log(`Insufficient ${resourceName} to build ${building}.`);
-        } else {
-          updatedResources[resourceName] = currentValue - resourceCost;
+          console.log(`Insufficient ${resourceName} to purchase ${entityName}.`);
+          return state;
         }
+        updatedResources[resourceName] = currentValue - resourceCost;
       });
 
-      if (!canAfford) return state;
+      Object.assign(resources, updatedResources);
 
-      Object.assign(newResources, updatedResources);
+      // // TODO: Refactor this to work with other types better?
+      // switch (entityType) {
+      //   case "buildings":
+      //     gameStateSlice.caseReducers.build(state, {payload: {building: entityName}, type: action.payload.type})
+      //     break;
+      //   default:
+      //     break;
+      // }
+
+      return {
+        ...state,
+        resources: resources,
+      };
+    },
+    build: (state, action) => {
+      const building: BuildingName = action.payload;
+      const newBuildings = { ...state.buildings };
+      // TODO: right now we're only building houses
+      // this should handle all sorts of building effects
+      const maxPop = state.populationMeta.maxPop;
+
       newBuildings[building] = (newBuildings[building] || 0) + 1;
 
       return {
         ...state,
+        // TODO: Again the next line is assuming we can only build houses
         populationMeta: { ...state.populationMeta, maxPop: maxPop + 5},
-        resources: newResources,
-        buildings: newBuildings,
+        buildings: {...newBuildings},
       };
     },
     exploreTile: (state, action) => {
-      const tileId = action.payload;
-      const tile = state.map.tiles[tileId]
-      tile.explored = true;
+      const {tileY, tileX} = action.payload;
+      const updatedTiles = state.map.tiles.map((row, rowIndex) => (
+        rowIndex === tileY ?
+          row.map((tile, colIndex) => (
+            colIndex === tileX ? {...tile, explored: true} : tile)
+          ) : row
+        )
+      );
+      
       return {
         ...state,
         map: {
           ...state.map,
           totalExploredTiles: state.map.totalExploredTiles + 1,
-          tiles: [ ...state.map.tiles, tile ]
+          tiles: updatedTiles,
         },
-      }
+      };
     },
     incrementResources: (state) => {
       const resources = {...state.resources};
@@ -180,6 +199,7 @@ export const gameStateSlice = createSlice({
 export const {
   addResource,
   build,
+  purchase,
   updatePopulation,
   exploreTile,
   incrementResources,
