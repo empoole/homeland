@@ -1,10 +1,11 @@
-import { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import useFrameTimeInterval from "../../hooks/useFrameTimeInterval";
 import { exploreTile } from "../../slices/GameState";
 import { TILE_SIZE, MAP_HEIGHT, MAP_WIDTH } from "../../configs/constants";
 import type { RootState } from "../../store";
 import type { Tile } from "../../types/gameState";
+import MapTooltip from "./MapTooltip";
 
 /**
  *
@@ -17,6 +18,9 @@ import type { Tile } from "../../types/gameState";
  *
  */
 
+// 8 is the unexplored tile type (for now)
+const UNEXPLORED_TILE_TYPE = 8;
+
 const MapCanvas = () => {
 	const dispatch = useDispatch();
 
@@ -25,7 +29,10 @@ const MapCanvas = () => {
 	const CANVAS_HEIGHT = 320;
 	const [ctx, setCtx] = useState<CanvasRenderingContext2D | null>(null);
 
-	// test
+    const [tooltipVisible, setTooltipVisible] = useState(false);
+    const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+    const [tooltipText, setTooltipText] = useState("");
+
 	interface Tilemap {
 		width: number; // Map width in tiles
 		height: number; // Map height in tiles
@@ -35,6 +42,7 @@ const MapCanvas = () => {
 
 	const tilesState = useSelector((state: RootState) => state.gameState).map
 		.tiles;
+	const currentResources = useSelector((state: RootState) => state.gameState.resources);
 
 	const tilemapData: Tilemap = {
 		width: MAP_WIDTH,
@@ -49,7 +57,6 @@ const MapCanvas = () => {
 	tilesetImage.onerror = () => {
 		console.error("Failed to load tileset image.");
 	};
-	// end test
 
 	useEffect(() => {
 		const canvas = canvasRef.current;
@@ -68,8 +75,8 @@ const MapCanvas = () => {
 		for (let y = 0; y < map.height; y++) {
 			for (let x = 0; x < map.width; x++) {
 				const tile = map.tiles[y][x];
-				// 8 is the unexplored tile type
-				const tileType = tile.explored ? tile.type : 8;
+
+				const tileType = tile.explored ? tile.type : UNEXPLORED_TILE_TYPE;
 				const sourceX =
 					(tileType % (tileset.width / map.tileSize)) * map.tileSize;
 				const sourceY =
@@ -107,6 +114,60 @@ const MapCanvas = () => {
 		return ctx;
 	};
 
+	const handleCanvasMouseMove = (
+		event: React.MouseEvent<HTMLCanvasElement, MouseEvent>
+	) => {
+		const canvas = canvasRef.current;
+		if (!canvas) return;
+
+		const rect = canvas.getBoundingClientRect();
+		const mouseX = event.clientX - rect.left;
+		const mouseY = event.clientY - rect.top;
+
+		const gridX = Math.floor(mouseX / TILE_SIZE);
+		const gridY = Math.floor(mouseY / TILE_SIZE);
+
+		if (
+			gridX >= 0 &&
+			gridX < MAP_WIDTH &&
+			gridY >= 0 &&
+			gridY < MAP_HEIGHT
+		) {
+			const tile =tilesState[gridY][gridX];
+			// Show tooltip with tile information
+			setTooltipPosition({ 
+				x: event.clientX + 10, // Offset slightly from cursor
+				y: event.clientY - 30 
+			});
+
+			if (!tile.explored) {
+				setTooltipText(`Unexplored tile - Click to explore for: ${JSON.stringify(tile.cost)}`);
+			} else {
+				switch(tile.type) {
+					case 1: // empty
+						setTooltipText(`Empty tile (${gridX}, ${gridY}) - Can be used for buildings`);
+						break;
+					case 2: // forest
+						setTooltipText(`Forest tile (${gridX}, ${gridY}) - Contributes to food and wood supplies`);
+						break;
+					case 3: // water
+						setTooltipText(`Water tile (${gridX}, ${gridY}) - Contributes to food supply`);
+						break;
+					case 4: // mine
+						setTooltipText(`Mine tile (${gridX}, ${gridY}) - Can be used for metal gathering`);
+						break;
+					default:
+						break;
+				}
+			}
+
+            
+			setTooltipVisible(true);
+		} else {
+			setTooltipVisible(false)
+		}
+	};
+
 	const handleCanvasClick = (
 		event: React.MouseEvent<HTMLCanvasElement, MouseEvent>
 	) => {
@@ -126,6 +187,47 @@ const MapCanvas = () => {
 			gridY >= 0 &&
 			gridY < MAP_HEIGHT
 		) {
+			const tile = tilesState[gridY][gridX];
+
+            // Show tooltip with tile information
+            setTooltipPosition({ 
+                x: clickX + rect.left, 
+                y: clickY + rect.top 
+            });
+
+			if (!tile.explored) {
+				
+				const canAfford = tile.cost.food <= currentResources.food && 
+								 tile.cost.wood <= currentResources.wood && 
+								 tile.cost.metals <= currentResources.metals;
+
+				if (!canAfford) {
+					setTooltipText(`Insufficient resources to mount this expedition.`);
+					setTooltipVisible(true);
+				} else {
+					// draw loading tile (type 9)
+					setTimeout(() => {
+						dispatch(exploreTile({ tileY: gridY, tileX: gridX }));
+					}, 1000);
+				}
+			} else {
+				switch(tile.type) {
+					case 2: // empty
+						setTooltipText(`Empty tile (${gridX}, ${gridY}) - Can be used for buildings`);
+						break;
+					case 3: // forest
+						setTooltipText(`Forest tile (${gridX}, ${gridY}) - Can be used for wood gathering`);
+						break;
+					case 4: // mine
+						setTooltipText(`Mine tile (${gridX}, ${gridY}) - Can be used for metal gathering`);
+						break;
+					default:
+						break;
+				}
+			}
+            
+            setTooltipVisible(true);
+
 			// Call the map exploration handler
 			// onTileClick({ x: gridX, y: gridY });
 			// This should actually do the following:
@@ -138,24 +240,39 @@ const MapCanvas = () => {
 			// forests give you wood generation
 			// blank spaces can be made into farms for food generation
 			// blank spaces can be dedicated to buildings, allowing up to 5 buildings to be added
-			if (!tilesState[gridY][gridX].explored) {
-				// draw loading tile (type 9)
-				setTimeout(() => {
-					dispatch(exploreTile({ tileY: gridY, tileX: gridX }));
-				}, 1000);
-			}
 		}
 	};
+
+    const handleTooltipToggle = () => {
+        setTooltipVisible(!tooltipVisible);
+    };
+
+    const handleCanvasMouseLeave = () => {
+        setTooltipVisible(false);
+    };
+
 	useFrameTimeInterval(100, () => drawMap(ctx, tilemapData, tilesetImage));
 
 	return (
-		<canvas
-			ref={canvasRef}
-			width={CANVAS_WIDTH}
-			height={CANVAS_HEIGHT}
-			style={{ border: "2px solid #b8c2b9" }}
-			onClick={handleCanvasClick}
-		></canvas>
+		<>
+			<canvas
+				ref={canvasRef}
+				width={CANVAS_WIDTH}
+				height={CANVAS_HEIGHT}
+				style={{ border: "2px solid #b8c2b9" }}
+				onClick={handleCanvasClick}
+				onMouseMove={handleCanvasMouseMove}
+				onMouseLeave={handleCanvasMouseLeave}
+			></canvas>
+			<MapTooltip 
+				x={tooltipPosition.x} 
+                y={tooltipPosition.y} 
+                text={tooltipText}
+                isVisible={tooltipVisible} 
+                onToggle={handleTooltipToggle}
+			/>
+		</>
+		
 	);
 };
 

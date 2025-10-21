@@ -51,9 +51,12 @@ export const TilesTypeNames = [
 	"houses",
 	"farms",
 ];
+export type TileResource = "wood" | "food" | "metals"
+export type TileCost = Record<TileResource, number>
 export type Tile = {
 	id: string;
 	type: number;
+	cost: TileCost;
 	explored: boolean;
 };
 

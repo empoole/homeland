@@ -35,3 +35,5 @@ export const mapResourceToBuilding = {
 	food: ["home", "farms"],
 	metals: ["mines"],
 } as const;
+
+export const populationLimitIncreasesByBuilding = { houses: 5, tenements: 15 } as const;

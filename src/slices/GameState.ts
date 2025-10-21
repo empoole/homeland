@@ -6,10 +6,11 @@ import {
 } from "../configs/constants";
 import { generateTileData } from "../lib/tiles";
 import { MAP_HEIGHT, MAP_WIDTH } from "../configs/constants";
+import { buildingMutations } from "../lib/state/mutations/buildings";
 
 import costs from "../configs/costs";
 
-import type { ResourceName, BuildingName, LockName } from "../types/gameState";
+import type { ResourceName, LockName, BuildingName } from "../types/gameState";
 import type { GameState } from "../types/gameState";
 
 // NOTES:
@@ -23,7 +24,7 @@ const initialState: GameState = {
 		probabilities: baseMapProbabilities,
 	},
 	resources: {
-		wood: 0,
+		wood: 1000,
 		food: 0,
 		metals: 0,
 	},
@@ -113,13 +114,16 @@ export const gameStateSlice = createSlice({
 
 			Object.assign(resources, updatedResources);
 
-			// TODO: Refactor this to work with other types better?
 			switch (entityType) {
 				case "buildings":
-					gameStateSlice.caseReducers.build(state, {
-						payload: { building: entityName },
-						type: action.payload.type,
-					});
+          if(entityName === "houses" || entityName === "tenements") {
+            const newState = buildingMutations.buildHousing(state, entityName as BuildingName, quantity)
+            return {...newState, resources: {...resources}}
+          }
+          if (entityName === "mines" || entityName === "farms" || entityName === "factories") {
+            const newState = buildingMutations.addBuilding(state, entityName as BuildingName, quantity)
+            return {...newState, resources: {...resources}}
+          }
 					break;
 				default:
 					break;
@@ -128,24 +132,6 @@ export const gameStateSlice = createSlice({
 			return {
 				...state,
 				resources: { ...resources },
-			};
-		},
-		build: (state, action) => {
-			const building: BuildingName = action.payload.building;
-			const newBuildings = { ...state.buildings };
-			// TODO: right now we're only building houses
-			// this should handle all sorts of building effects
-			const maxPop = state.populationMeta.maxPop;
-
-			newBuildings[building] = (newBuildings[building] || 0) + 1;
-
-			console.log({ ...newBuildings });
-
-			// TODO: Again the next line is assuming we can only build houses
-			return {
-				...state,
-				buildings: { ...newBuildings },
-				populationMeta: { ...state.populationMeta, maxPop: maxPop + 5 },
 			};
 		},
 		exploreTile: (state, action) => {
@@ -236,7 +222,6 @@ export const gameStateSlice = createSlice({
 
 export const {
 	addResource,
-	build,
 	purchase,
 	updatePopulation,
 	exploreTile,
