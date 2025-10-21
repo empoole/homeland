@@ -3,9 +3,17 @@
  */
 import { createAction } from "@reduxjs/toolkit";
 
-export const purchase = createAction("GameState/Purchase", (
-    { entityName, entityType, quantity }:
-    { entityName: string, entityType: string, quantity: number }
-) => ({
-    payload: { entityName, entityType, quantity }
-}));
+export const purchase = createAction(
+  "GameState/Purchase",
+  ({
+    entityName,
+    entityType,
+    quantity,
+  }: {
+    entityName: string;
+    entityType: string;
+    quantity: number;
+  }) => ({
+    payload: { entityName, entityType, quantity },
+  })
+);

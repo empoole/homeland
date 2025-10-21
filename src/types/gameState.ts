@@ -1,63 +1,61 @@
 export type GameState = {
-  map: {
-    totalExploredTiles: number;
-    tiles: Tile[][];
-    probabilities: { [key: string]: number };
-  }
-  resources: {
-    wood: number;
-    food: number;
-    metals: number;
-  };
-  buildings: {
-    home: number;
-    houses: number;
-    tenements: number;
-    farms: number;
-    mines: number;
-    factories: number;
-  };
-  populations: {
-    civilians: number;
-    lumberjacks?: number;
-    miners?: number;
-    builders?: number;
-    farmers?: number;
-  };
-  populationMeta: {
-    maxPop: number;
-    civilianGrowthProbability: number;
-    maxRandomGrowth: number;
-  };
-  locks: {
-    mines: boolean;
-    tenements: boolean;
-    factories: boolean;
-    metals: boolean;
-  };
-  multipliers: {
-    home: number;
-    farms: number;
-    mines: number;
-  }
+	map: {
+		totalExploredTiles: number;
+		tiles: Tile[][];
+		probabilities: { [key: string]: number };
+	};
+	resources: {
+		wood: number;
+		food: number;
+		metals: number;
+	};
+	buildings: {
+		home: number;
+		houses: number;
+		tenements: number;
+		farms: number;
+		mines: number;
+		factories: number;
+	};
+	populations: {
+		civilians: number;
+		lumberjacks?: number;
+		miners?: number;
+		builders?: number;
+		farmers?: number;
+	};
+	populationMeta: {
+		maxPop: number;
+		civilianGrowthProbability: number;
+		maxRandomGrowth: number;
+	};
+	locks: {
+		mines: boolean;
+		tenements: boolean;
+		factories: boolean;
+		metals: boolean;
+	};
+	multipliers: {
+		home: number;
+		farms: number;
+		mines: number;
+	};
 };
 
 export const TilesTypeNames = [
-  "unexplored",
-  "highlighted",
-  "home",
-  "empty",
-  "mines",
-  "houses",
-  "farms"
+	"unexplored",
+	"highlighted",
+	"home",
+	"empty",
+	"mines",
+	"houses",
+	"farms",
 ];
 export type Tile = {
-  id: string;
-  type: number;
-  explored: boolean;
+	id: string;
+	type: number;
+	explored: boolean;
 };
-
-
 
 export type GameStateKeys<T extends keyof GameState> = keyof GameState[T];
 

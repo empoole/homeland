@@ -9,102 +9,122 @@ import ResourceDisplay from "./ui/ResourceDisplay";
 // import { MapState } from "../types/map";
 
 import {
-  addResource,
-  purchase,
-  updatePopulation,
-  unlock,
-  incrementResources,
+	addResource,
+	purchase,
+	updatePopulation,
+	unlock,
+	incrementResources,
 } from "../slices/GameState";
 import useFrameTimeInterval from "../hooks/useFrameTimeInterval";
 import MapCanvas from "./map/MapCanvas";
 
 const Game = () => {
-  const dispatch = useDispatch();
-  const gameState = useSelector((state: RootState) => state.gameState);
-  const locks = gameState.locks;
-  const pops = gameState.populations;
+	const dispatch = useDispatch();
+	const gameState = useSelector((state: RootState) => state.gameState);
+	const locks = gameState.locks;
+	const pops = gameState.populations;
 
-  /// MAP STUFF V
+	/// MAP STUFF V
 
-  // const INITIAL_MAP_SIZE = 5;
+	// const INITIAL_MAP_SIZE = 5;
 
-  // export const initialMapState: MapState = {
-  //   mapSize: INITIAL_MAP_SIZE,
-  //   grid: initializeMapGrid(INITIAL_MAP_SIZE),
-  //   lastVisitedTileId: "0-0", // The starting tile
-  // };
+	// export const initialMapState: MapState = {
+	//   mapSize: INITIAL_MAP_SIZE,
+	//   grid: initializeMapGrid(INITIAL_MAP_SIZE),
+	//   lastVisitedTileId: "0-0", // The starting tile
+	// };
 
-  // You would then call your update function to mark its neighbors as 'next-to-visit'
-  // e.g., generateNextTiles(initialMapState.grid, '0-0')
-  /// MAP STUFF
+	// You would then call your update function to mark its neighbors as 'next-to-visit'
+	// e.g., generateNextTiles(initialMapState.grid, '0-0')
+	/// MAP STUFF
 
-  useFrameTimeInterval(1000, () => {
-    dispatch(updatePopulation());
-    dispatch(incrementResources())
-  });
+	useFrameTimeInterval(1000, () => {
+		dispatch(updatePopulation());
+		dispatch(incrementResources());
+	});
 
-  useFrameTimeInterval(100, () => {
-    const totalPops = Object.values(pops).reduce(
-      (total, pop) => total + pop,
-      0
-    );
+	useFrameTimeInterval(100, () => {
+		const totalPops = Object.values(pops).reduce(
+			(total, pop) => total + pop,
+			0
+		);
 
-    if (totalPops > 50 && locks.tenements) dispatch(unlock("tenements"));
-  });
+		if (totalPops > 50 && locks.tenements) dispatch(unlock("tenements"));
+	});
 
-  return (
-    <div id="main">
-      <section>
-        <div id="resource-displays">
-          <ResourceDisplay resourceName="resources" />
-          <ResourceDisplay resourceName="buildings" />
-          <ResourceDisplay resourceName="populations" />
-        </div>
-        <h4>
-          Total Population:{" "}
-          {Object.values(pops).reduce((total, pop) => total + pop, 0)}/
-          {gameState.populationMeta.maxPop}
-        </h4>
-        <div id="resource-buttons">
-          <Button
-            text="Gather Wood"
-            cooldown={timing.cooldowns.gather.wood}
-            func={() => addResource({ resourceName: "wood", value: 2 })}
-          />
-          {!locks.mines && (
-            <Button
-              text="Gather Metals"
-              cooldown={timing.cooldowns.gather.metals}
-              func={() => addResource({ resourceName: "metals", value: 2 })}
-            />
-          )}
-        </div>
-        <div id="build-buttons">
-          <Button
-            text="Build House"
-            cooldown={timing.cooldowns.build.houses}
-            func={() => {
-              if (gameState.resources.wood >= costs.buildings.houses.wood) {
-                return purchase({entityType: "buildings", entityName: "houses", quantity: 1})
-              } else {
-                return null
-              }
-            }}
-          />
-          {!locks.tenements && (
-            <Button
-              text="Build Tenement"
-              cooldown={timing.cooldowns.build.tenements}
-              func={() => purchase({entityType: "buildings", entityName: "tenements", quantity: 1})}
-            />
-          )}
-        </div>
-      </section>
-      <section>
-        <MapCanvas />
-      </section>
-    </div>
-  );
+	return (
+		<div id="main">
+			<section>
+				<div id="resource-displays">
+					<ResourceDisplay resourceName="resources" />
+					<ResourceDisplay resourceName="buildings" />
+					<ResourceDisplay resourceName="populations" />
+				</div>
+				<h4>
+					Total Population:{" "}
+					{Object.values(pops).reduce((total, pop) => total + pop, 0)}
+					/{gameState.populationMeta.maxPop}
+				</h4>
+				<div id="resource-buttons">
+					<Button
+						text="Gather Wood"
+						cooldown={timing.cooldowns.gather.wood}
+						func={() =>
+							addResource({ resourceName: "wood", value: 2 })
+						}
+					/>
+					{!locks.mines && (
+						<Button
+							text="Gather Metals"
+							cooldown={timing.cooldowns.gather.metals}
+							func={() =>
+								addResource({
+									resourceName: "metals",
+									value: 2,
+								})
+							}
+						/>
+					)}
+				</div>
+				<div id="build-buttons">
+					<Button
+						text="Build House"
+						cooldown={timing.cooldowns.build.houses}
+						func={() => {
+							if (
+								gameState.resources.wood >=
+								costs.buildings.houses.wood
+							) {
+								return purchase({
+									entityType: "buildings",
+									entityName: "houses",
+									quantity: 1,
+								});
+							} else {
+								return null;
+							}
+						}}
+					/>
+					{!locks.tenements && (
+						<Button
+							text="Build Tenement"
+							cooldown={timing.cooldowns.build.tenements}
+							func={() =>
+								purchase({
+									entityType: "buildings",
+									entityName: "tenements",
+									quantity: 1,
+								})
+							}
+						/>
+					)}
+				</div>
+			</section>
+			<section>
+				<MapCanvas />
+			</section>
+		</div>
+	);
 };
 
 export default Game;
