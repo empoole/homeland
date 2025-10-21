@@ -1,4 +1,7 @@
 export type GameState = {
+	environment: {
+		stability: number;
+	};
 	map: {
 		totalExploredTiles: number;
 		tiles: Tile[][];

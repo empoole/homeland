@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import useFrameTimeInterval from "../../hooks/useFrameTimeInterval";
 import { exploreTile } from "../../slices/GameState";
-import { TILE_SIZE, MAP_HEIGHT, MAP_WIDTH } from "../../configs/constants";
+import { TILE_SIZE, MAP_HEIGHT, MAP_WIDTH, TileTypes } from "../../configs/constants";
 import type { RootState } from "../../store";
 import type { Tile } from "../../types/gameState";
 import MapTooltip from "./MapTooltip";
@@ -18,11 +18,11 @@ import MapTooltip from "./MapTooltip";
  *
  */
 
-// 8 is the unexplored tile type (for now)
-const UNEXPLORED_TILE_TYPE = 8;
-
 const MapCanvas = () => {
 	const dispatch = useDispatch();
+
+	// 8 is the unexplored tile type (for now)
+	const UNEXPLORED_TILE_TYPE = TileTypes.indexOf("unexplored");
 
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
 	const CANVAS_WIDTH = 320;
@@ -144,24 +144,22 @@ const MapCanvas = () => {
 				setTooltipText(`Unexplored tile - Click to explore for: ${JSON.stringify(tile.cost)}`);
 			} else {
 				switch(tile.type) {
-					case 1: // empty
+					case 0: // empty
 						setTooltipText(`Empty tile (${gridX}, ${gridY}) - Can be used for buildings`);
 						break;
-					case 2: // forest
+					case 1: // forest
 						setTooltipText(`Forest tile (${gridX}, ${gridY}) - Contributes to food and wood supplies`);
 						break;
-					case 3: // water
+					case 2: // water
 						setTooltipText(`Water tile (${gridX}, ${gridY}) - Contributes to food supply`);
 						break;
-					case 4: // mine
+					case 3: // mine
 						setTooltipText(`Mine tile (${gridX}, ${gridY}) - Can be used for metal gathering`);
 						break;
 					default:
 						break;
 				}
 			}
-
-            
 			setTooltipVisible(true);
 		} else {
 			setTooltipVisible(false)
@@ -189,7 +187,6 @@ const MapCanvas = () => {
 		) {
 			const tile = tilesState[gridY][gridX];
 
-            // Show tooltip with tile information
             setTooltipPosition({ 
                 x: clickX + rect.left, 
                 y: clickY + rect.top 
@@ -202,24 +199,51 @@ const MapCanvas = () => {
 								 tile.cost.metals <= currentResources.metals;
 
 				if (!canAfford) {
-					setTooltipText(`Insufficient resources to mount this expedition.`);
-					setTooltipVisible(true);
+					console.log("Not enough resources");
 				} else {
 					// draw loading tile (type 9)
 					setTimeout(() => {
-						dispatch(exploreTile({ tileY: gridY, tileX: gridX }));
+						dispatch(exploreTile({ tileY: gridY, tileX: gridX, tileCost: tile.cost }));
 					}, 1000);
 				}
 			} else {
 				switch(tile.type) {
-					case 2: // empty
-						setTooltipText(`Empty tile (${gridX}, ${gridY}) - Can be used for buildings`);
+					case 0: // empty
+						/**
+						 * TODO:
+						 * An empty tile can be designated for farming, housing, or industry.
+						 * Once designated you will need to invest resources to build.
+						 * Each tile can only contain a limited count of buildings.
+						 * Buildings can be upgraded at increasing cost.
+						 * Tiles can be redesignated (destroys all existing buildings on the tile)
+						 */
 						break;
-					case 3: // forest
-						setTooltipText(`Forest tile (${gridX}, ${gridY}) - Can be used for wood gathering`);
+					case 1: // forest
+						/**
+						 * TODO:
+						 * A forest tile can be left as is and will produce a small amount of food and wood
+						 * A forest can be designated for logging operations to produce more wood but no food
+						 * A forest can be cleared which creates an empty tile in its place and grants a lump sum of wood
+						 *  - Clearing forests has an environmental impact
+						 */
 						break;
-					case 4: // mine
-						setTooltipText(`Mine tile (${gridX}, ${gridY}) - Can be used for metal gathering`);
+					case 2: // water
+						/**
+						 * TODO:
+						 * A water tile will generate a small amount of food
+						 * 	- One result of environmental instability is a reduction in food production from water tiles
+						 * 	- In time the water may dry up turning the tile to a desert (empty tile)
+						 *  - Water tiles can also be cleared to create an empty tile
+						 * 	- Clearing water tiles has an environmental impact
+						 */
+						break;
+					case 3: // mine
+						/**
+						 * TODO:
+						 * A mine tile can be designated for mining operations to produce metals
+						 * An undesignated mine does not generate metals
+						 * A mine must be built on before it starts generating metals
+						 */
 						break;
 					default:
 						break;
@@ -227,19 +251,6 @@ const MapCanvas = () => {
 			}
             
             setTooltipVisible(true);
-
-			// Call the map exploration handler
-			// onTileClick({ x: gridX, y: gridY });
-			// This should actually do the following:
-			// check resource levels
-			// if you have enough
-			// show loading tile (1)
-			// grant tile related reward
-			// -----
-			// mines give you metal generation
-			// forests give you wood generation
-			// blank spaces can be made into farms for food generation
-			// blank spaces can be dedicated to buildings, allowing up to 5 buildings to be added
 		}
 	};
 

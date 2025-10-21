@@ -15,15 +15,16 @@ const MapTooltip = ({x, y, text, isVisible, onToggle,} : Props) => {
         left: `${x}px`,
         display: isVisible ? "block" : "none",
         backgroundColor: "#b8c2b9",
-        color: "#000000",
+        color: "#382b26",
         padding: "0.5rem 0.25rem",
-        fontSize: "12px"
+        fontSize: "12px",
+        boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
     }
 
     return (
         <span style={style} onClick={onToggle}>
             <span style={{
-                border: "1px solid black",
+                border: "1px solid #382b26",
                 padding: "0.25rem 0.125rem",
                 display: "block"
             }}>{text}</span>

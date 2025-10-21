@@ -2,22 +2,23 @@ import { createSlice } from "@reduxjs/toolkit";
 import {
 	baseMapProbabilities,
 	baseBuildingMultipliers,
-	mapBuildingToResource,
 } from "../configs/constants";
 import { generateTileData } from "../lib/tiles";
 import { MAP_HEIGHT, MAP_WIDTH } from "../configs/constants";
 import { buildingMutations } from "../lib/state/mutations/buildings";
+import { calculateResourceIncrement } from "../lib/state/helpers/helpers"
 
 import costs from "../configs/costs";
 
 import type { ResourceName, LockName, BuildingName } from "../types/gameState";
 import type { GameState } from "../types/gameState";
+import { TileTypes } from "../configs/constants";
 
-// NOTES:
-// to build a mine you need to find a mine tile and build a mine there
-//
 const tiles = generateTileData(MAP_WIDTH, MAP_HEIGHT);
 const initialState: GameState = {
+  environment: {
+    stability: 100,
+  },
 	map: {
 		totalExploredTiles: 1,
 		tiles: tiles,
@@ -87,16 +88,6 @@ export const gameStateSlice = createSlice({
 				return state;
 			}
 
-			const updatedResources: {
-				wood: number;
-				food: number;
-				metals: number;
-			} = {
-				wood: 0,
-				food: 0,
-				metals: 0,
-			};
-
 			Object.keys(entityCost).forEach((resourceKey) => {
 				const resourceName = resourceKey as ResourceName;
 				const resourceCost =
@@ -109,10 +100,8 @@ export const gameStateSlice = createSlice({
 					);
 					return state;
 				}
-				updatedResources[resourceName] = currentValue - resourceCost;
+				resources[resourceName] = currentValue - resourceCost;
 			});
-
-			Object.assign(resources, updatedResources);
 
 			switch (entityType) {
 				case "buildings":
@@ -136,6 +125,19 @@ export const gameStateSlice = createSlice({
 		},
 		exploreTile: (state, action) => {
 			const { tileY, tileX } = action.payload;
+      const tileCost = action.payload.tileCost as Record<ResourceName, number>;
+      const resources = {...state.resources};
+			for (const resource in tileCost) {
+				const cost = tileCost[resource as ResourceName];
+				const remainingResources =
+					resources[resource as ResourceName] - cost;
+				if (remainingResources < 0) {
+					console.log(`Insufficient ${resource} to explore this tile.`);
+					return state;
+				}
+				resources[resource as ResourceName] = remainingResources;
+			}
+
 			const updatedTiles = state.map.tiles.map((row, rowIndex) =>
 				rowIndex === tileY
 					? row.map((tile, colIndex) =>
@@ -148,6 +150,7 @@ export const gameStateSlice = createSlice({
 
 			return {
 				...state,
+        resources: {...resources},
 				map: {
 					...state.map,
 					totalExploredTiles: state.map.totalExploredTiles + 1,
@@ -156,40 +159,28 @@ export const gameStateSlice = createSlice({
 			};
 		},
 		incrementResources: (state) => {
-			const resources = { ...state.resources };
-			const buildings = { ...state.buildings };
+      // Main logic
+      const resourceIncrements: Array<{ resource: ResourceName; increment: number }> = [
+        // From tiles
+        ...state.map.tiles
+          .flat()
+          .filter(tile => tile.explored)
+          .flatMap(tile => calculateResourceIncrement(TileTypes[tile.type], 1, state.multipliers, state.populations.civilians)),
+        
+        // From buildings
+        ...Object.entries(state.buildings)
+          .flatMap(([building, quantity]) => 
+            calculateResourceIncrement(building, quantity, state.multipliers, state.populations.civilians)
+          )
+      ];
 
-			for (const building in buildings) {
-				const resourceTypes =
-					mapBuildingToResource[
-						building as keyof typeof mapBuildingToResource
-					];
-				if (!resourceTypes) {
-					console.warn(
-						`No resources mapped for building: ${building}`
-					);
-					continue;
-				}
-				const numGenerators =
-					buildings[building as keyof typeof buildings];
-				const multiplier =
-					state.multipliers[
-						building as keyof typeof state.multipliers
-					];
-				if (!multiplier) {
-					console.warn(
-						`No multiplier found for resource: ${building}`
-					);
-					continue;
-				}
-				const increment = multiplier * numGenerators;
-				for (const resource of resourceTypes) {
-					resources[resource as ResourceName] =
-						resources[resource as ResourceName] + increment;
-				}
-			}
+      // Apply all increments
+      const updatedResources = { ...state.resources };
+      for (const { resource, increment } of resourceIncrements) {
+        updatedResources[resource] += increment;
+      }
 
-			return { ...state, resources: resources };
+      return { ...state, resources: updatedResources };
 		},
 		updatePopulation: (state) => {
 			if (Math.random() > state.populationMeta.civilianGrowthProbability)
